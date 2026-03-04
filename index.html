@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>موقعي المطور ✨</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #333333;
+            --btn-back: #f8f9fa;
+        }
+        [data-theme="dark"] {
+            --bg-color: #0b0e14;
+            --text-color: #ffffff;
+            --btn-back: #2d2d2d;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            transition: 0.8s;
+            overflow: hidden;
+            text-align: center;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            font-size: 1.5rem;
+            background: none;
+            border: none;
+            z-index: 1001;
+        }
+
+        /* النجوم والفقاعات */
+        .star { position: absolute; background: white; border-radius: 50%; opacity: 0.3; animation: fall linear infinite; z-index: 1; }
+        .bubble { position: absolute; bottom: -50px; background-color: rgba(173, 216, 230, 0.2); border-radius: 50%; animation: rise 10s infinite ease-in; z-index: 0; }
+        @keyframes fall { from { transform: translateY(-10vh); } to { transform: translateY(110vh); } }
+        @keyframes rise { from { transform: translateY(0) scale(1); opacity: 0.5; } to { transform: translateY(-110vh) scale(1.5); opacity: 0; } }
+
+        /* نبض الزر الأول */
+        .pulse { animation: pulse-animation 2s infinite; }
+        @keyframes pulse-animation {
+            0% { box-shadow: 0 0 0 0px rgba(40, 167, 69, 0.4); }
+            100% { box-shadow: 0 0 0 20px rgba(40, 167, 69, 0); }
+        }
+
+        .btn {
+            padding: 15px 35px;
+            font-size: 1.2rem;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: 0.3s;
+            margin: 10px;
+            z-index: 10;
+        }
+        .btn-green { background-color: #28a745; }
+        .btn-choice { background-color: #007bff; }
+        .btn-back { background-color: var(--btn-back); color: var(--text-color); border: 1px solid #ddd; font-size: 0.9rem; }
+
+        .hidden { display: none; }
+
+        .final-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            max-width: 80%;
+            margin: 0 auto;
+        }
+
+        .progress-container { width: 200px; background-color: #ddd; border-radius: 20px; margin: 20px auto; overflow: hidden; }
+        .progress-bar { width: 5%; height: 10px; background-color: #28a745; }
+
+        /* تعديل القلوب لتكون أكثر تنوعاً */
+        .heart { 
+            position: fixed; 
+            color: #ff4d4d; 
+            user-select: none;
+            pointer-events: none;
+            z-index: 2000;
+            animation: burst 2s ease-out forwards; 
+        }
+        @keyframes burst { 
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 1; } 
+            100% { transform: translate(var(--tx), var(--ty)) scale(var(--s)) rotate(var(--r)); opacity: 0; } 
+        }
+    </style>
+</head>
+<body data-theme="light">
+
+    <button class="theme-toggle" onclick="toggleTheme()">🌙</button>
+
+    <div id="step1">
+        <button class="btn btn-green pulse" onclick="startExperience(event)">اهلااا منورة الموقع</button>
+    </div>
+
+    <div id="step2" class="hidden">
+        <p id="type-question"></p>
+        <div id="name-options" class="hidden">
+            <button class="btn btn-choice" onclick="showFinal('rufayda')">رفيدة</button>
+            <button class="btn btn-choice" id="laraBtn" onclick="showFinal('lara')">لارا</button>
+            <br>
+            <button class="btn btn-back" onclick="goBack(1)">رجوع للخلف</button>
+        </div>
+    </div>
+
+    <div id="step3" class="hidden">
+        <div class="final-card">
+            <p id="final-message"></p>
+            <div class="progress-container">
+                <div class="progress-bar"></div>
+            </div>
+            <small>نسبة اكتمال الموقع: 5% 🛠️</small>
+        </div>
+        <br>
+        <button class="btn btn-back" onclick="goBack(2)">رجوع للاختيار</button>
+    </div>
+
+    <script>
+        const popSound = new Audio('https://www.soundjay.com/buttons/sounds/button-37a.mp3');
+        const errorSound = new Audio('https://www.soundjay.com/buttons/sounds/button-10.mp3');
+        const magicSound = new Audio('https://www.soundjay.com/magic/sounds/magic-chime-01.mp3');
+
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.querySelector('.theme-toggle');
+            if (body.getAttribute('data-theme') === 'light') {
+                body.setAttribute('data-theme', 'dark');
+                btn.innerText = '☀️';
+                createStars();
+            } else {
+                body.setAttribute('data-theme', 'light');
+                btn.innerText = '🌙';
+                removeStars();
+            }
+        }
+
+        function createStars() {
+            for (let i = 0; i < 40; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2 + 1 + 'px';
+                star.style.width = size; star.style.height = size;
+                star.style.left = Math.random() * 100 + 'vw';
+                star.style.top = Math.random() * -100 + 'vh';
+                star.style.animationDuration = (Math.random() * 5 + 7) + 's';
+                document.body.appendChild(star);
+            }
+        }
+
+        function removeStars() { document.querySelectorAll('.star').forEach(s => s.remove()); }
+
+        function createBubbles() {
+            setInterval(() => {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 30 + 10 + 'px';
+                bubble.style.width = size; bubble.style.height = size;
+                bubble.style.left = Math.random() * 100 + 'vw';
+                bubble.style.animationDuration = (Math.random() * 5 + 5) + 's';
+                document.body.appendChild(bubble);
+                setTimeout(() => bubble.remove(), 10000);
+            }, 1000);
+        }
+        createBubbles();
+
+        function typeWriter(text, elementId, callback) {
+            let i = 0;
+            const elem = document.getElementById(elementId);
+            elem.innerHTML = "";
+            function type() {
+                if (i < text.length) {
+                    elem.innerHTML += text.charAt(i);
+                    i++;
+                    setTimeout(type, 50);
+                } else if (callback) {
+                    callback();
+                }
+            }
+            type();
+        }
+
+        function startExperience(event) {
+            popSound.play();
+            
+            // --- كثرنا القلوب هنا (60 قلب) ---
+            for (let i = 0; i < 60; i++) {
+                const heart = document.createElement('div');
+                heart.innerHTML = (i % 2 === 0) ? '❤️' : '💖'; // تنويع بين القلوب
+                heart.className = 'heart';
+                
+                // تنطلق من مكان الماوس
+                heart.style.left = event.clientX + 'px';
+                heart.style.top = event.clientY + 'px';
+                
+                // زوايا عشوائية ومسافات أبعد
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 150 + Math.random() * 400; // مسافة الانتشار
+                const size = 0.5 + Math.random() * 2; // أحجام مختلفة
+                const rotation = Math.random() * 360; // دوران عشوائي
+                
+                heart.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                heart.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                heart.style.setProperty('--s', size);
+                heart.style.setProperty('--r', rotation + 'deg');
+
+                document.body.appendChild(heart);
+                
+                // حذف القلوب بعد انتهاء الحركة
+                setTimeout(() => heart.remove(), 2000);
+            }
+            
+            setTimeout(() => {
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                typeWriter("اهلا بيكك المهم وش باغية يكون اسمك؟", "type-question", () => {
+                    document.getElementById('name-options').classList.remove('hidden');
+                });
+            }, 1000); // زيادة التأخير قليلاً لنرى انفجار القلوب
+        }
+
+        function showFinal(name) {
+            const messageArea = document.getElementById('final-message');
+            document.getElementById('step2').classList.add('hidden');
+            document.getElementById('step3').classList.remove('hidden');
+
+            let finalTxt = "";
+            if (name === 'rufayda') {
+                magicSound.play();
+                confetti({particleCount: 200, spread: 90, origin: {y: 0.6}});
+                finalTxt = "اهلا بيك ازين المهم مكاين والو مزالني نخدم فيه 😖";
+            } else {
+                errorSound.play();
+                finalTxt = "علابالك نبغي اسمك الصح تسما مش شطورة + اهلا بيك ازين المهم مكاين والو مزالني نخدم فيه 😖";
+            }
+            typeWriter(finalTxt, "final-message");
+        }
+
+        function goBack(step) {
+            document.getElementById('step' + (step + 1)).classList.add('hidden');
+            document.getElementById('step' + step).classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
